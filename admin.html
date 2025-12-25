@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IEDC Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Download Supabase JS to avoid tracking prevention -->
+    <script>
+        // Suppress storage warnings that don't affect functionality
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            const message = args.join(' ');
+            if (!message.includes('Tracking Prevention blocked access to storage')) {
+                originalWarn.apply(console, args);
+            }
+        };
+
+        // Fallback Supabase client creation
+        window.supabaseLoaded = false;
+        
+        // Set credentials early so they're available
+        window.SUPABASE_URL = 'https://qkrgogzlqynebqzijtew.supabase.co';
+        window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrcmdvZ3pscXluZWJxemlqdGV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDU1NzUsImV4cCI6MjA4MDc4MTU3NX0.klmTg6bYtLFHxh3XGnpwUVBDEVtvaDWuv3ypV1zwcK8';
+        
+        // Try to load from CDN with timeout
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        script.async = true;
+        
+        let loadTimeout;
+        
+        script.onload = () => {
+            clearTimeout(loadTimeout);
+            window.supabaseLoaded = true;
+            console.log('Supabase loaded from CDN');
+            
+            // Initialize client immediately after CDN loads
+            setTimeout(() => {
+                if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase && !window.supabaseClient) {
+                    window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+                    console.log('CDN Supabase client initialized');
+                }
+            }, 100);
+            
+            // Restore original console.warn after successful load
+            setTimeout(() => { console.warn = originalWarn; }, 2000);
+        };
+        
+        script.onerror = () => {
+            clearTimeout(loadTimeout);
+            console.log('CDN unavailable, using fallback mode');
+            // Create a more functional supabase object for basic functionality
+            window.supabase = {
+                createClient: function(url, key) {
+                    return {
+                        from: function(table) {
+                            return {
+                                select: function(columns) {
+                                    return {
+                                        eq: function(column, value) {
+                                            return {
+                                                single: function() {
+                                                    // Return demo data for admin panel
+                                                    return Promise.resolve({
+                                                        data: {
+                                                            id: 1,
+                                                            full_name: "Demo User",
+                                                            email: "demo@example.com",
+                                                            status: "Pending",
+                                                            applied_position: "Demo Position",
+                                                            notes: "CDN is blocked. Using fallback mode."
+                                                        }, 
+                                                        error: null
+                                                    });
+                                                },
+                                                order: function() {
+                                                    return Promise.resolve({
+                                                        data: [{
+                                                            id: 1,
+                                                            full_name: "Demo User",
+                                                            email: "demo@example.com",
+                                                            status: "Pending",
+                                                            applied_position: "Demo Position",
+                                                            notes: "CDN is blocked. Using fallback mode."
+                                                        }], 
+                                                        error: null
+                                                    });
+                                                }
+                                            };
+                                        },
+                                        order: function() {
+                                            return Promise.resolve({
+                                                data: [{
+                                                    id: 1,
+                                                    full_name: "Demo User",
+                                                    email: "demo@example.com",
+                                                    status: "Pending",
+                                                    applied_position: "Demo Position",
+                                                    notes: "CDN is blocked. Using fallback mode."
+                                                }], 
+                                                error: null
+                                            });
+                                        }
+                                    };
+                                },
+                                update: function(data) {
+                                    return {
+                                        eq: function(column, value) {
+                                            return Promise.resolve({
+                                                data: null,
+                                                error: {message: 'Updates not available in fallback mode. Please use a different browser or disable tracking protection.'}
+                                            });
+                                        }
+                                    };
+                                }
+                            };
+                        }
+                    };
+                }
+            };
+            window.supabaseLoaded = true;
+            
+            // Initialize the client immediately with fallback
+            if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+                window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+                console.log('Fallback Supabase client initialized');
+            }
+            
+            // Restore original console.warn after fallback setup
+            setTimeout(() => { console.warn = originalWarn; }, 2000);
+        };
+        
+        // Set timeout for CDN loading (5 seconds)
+        loadTimeout = setTimeout(() => {
+            console.log('CDN loading timeout, using fallback mode');
+            script.onerror();
+        }, 5000);
+        
+        document.head.appendChild(script);
+    </script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="#" class="logo">IEDC Admin Panel</a>
+            <a href="index.html" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">Back to Portal</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 class="card-title" style="margin-bottom: 0;">Registered Candidates</h2>
+                <button id="refreshBtn" class="btn btn-primary">Refresh Data</button>
+            </div>
+            
+            <div class="table-container">
+                <table id="candidatesTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th class="hide-mobile">Branch</th>
+                            <th>Preferred Positions</th>
+                            <th>Status</th>
+                            <th class="hide-mobile">Interview Time</th>
+                            <th class="hide-mobile">Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="loading" style="text-align: center; padding: 2rem; color: var(--text-muted);">Loading...</div>
+        </div>
+    </main>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="card-title" style="margin-bottom: 0;">Update Candidate</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <form id="updateForm">
+                <input type="hidden" id="editId">
+                
+                <div class="form-group">
+                    <label>Candidate Name</label>
+                    <input type="text" id="editName" disabled style="background-color: #f3f4f6;">
+                </div>
+
+                <div class="form-group">
+                    <label>Applied Positions</label>
+                    <div id="positionInfo" style="background-color: #f3f4f6; padding: 0.75rem; border-radius: var(--border-radius); font-size: 0.9rem;">
+                        <div><strong>1st Choice:</strong> <span id="position1Text">-</span></div>
+                        <div><strong>2nd Choice:</strong> <span id="position2Text">-</span></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editStatus">Status</label>
+                    <select id="editStatus" required>
+                        <option value="Pending">Pending</option>
+                        <option value="Shortlisted">Shortlisted</option>
+                        <option value="Interview Scheduled">Interview Scheduled</option>
+                        <option value="Selected">Selected</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="selectedPositionGroup" style="display: none;">
+                    <label for="editSelectedPosition">Selected for Position</label>
+                    <select id="editSelectedPosition">
+                        <option value="">Choose Position</option>
+                        <option id="pos1Option" value="">Position 1</option>
+                        <option id="pos2Option" value="">Position 2</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="interviewTimeGroup" style="display: none;">
+                    <label for="editTime">Interview Date & Time</label>
+                    <input type="datetime-local" id="editTime">
+                </div>
+
+                <div class="form-group" id="meetLinkGroup" style="display: none;">
+                    <label for="editLink">Google Meet Link</label>
+                    <input type="text" id="editLink" placeholder="https://meet.google.com/...">
+                </div>
+
+                <div class="form-group">
+                    <label for="editNotes">Admin Notes</label>
+                    <textarea id="editNotes" placeholder="Internal notes..." style="width: 100%; min-height: 80px; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: var(--border-radius); font-size: 1rem; resize: vertical;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Save Changes</button>
+                    <button type="button" class="btn btn-danger close-modal-btn" style="flex: 1;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="supabase-client.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

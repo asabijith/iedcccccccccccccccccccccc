@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IEDC Interview Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Download Supabase JS to avoid tracking prevention -->
+    <script>
+        // Suppress storage warnings that don't affect functionality
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            const message = args.join(' ');
+            if (!message.includes('Tracking Prevention blocked access to storage')) {
+                originalWarn.apply(console, args);
+            }
+        };
+
+        // Fallback Supabase client creation
+        window.supabaseLoaded = false;
+        
+        // Set credentials early so they're available
+        window.SUPABASE_URL = 'https://qkrgogzlqynebqzijtew.supabase.co';
+        window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrcmdvZ3pscXluZWJxemlqdGV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDU1NzUsImV4cCI6MjA4MDc4MTU3NX0.klmTg6bYtLFHxh3XGnpwUVBDEVtvaDWuv3ypV1zwcK8';
+        
+        // Try to load from CDN with timeout
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        script.async = true;
+        
+        let loadTimeout;
+        
+        script.onload = () => {
+            clearTimeout(loadTimeout);
+            window.supabaseLoaded = true;
+            console.log('Supabase loaded from CDN');
+            
+            // Initialize client immediately after CDN loads
+            setTimeout(() => {
+                if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase && !window.supabaseClient) {
+                    window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+                    console.log('CDN Supabase client initialized');
+                }
+            }, 100);
+            
+            // Restore original console.warn after successful load
+            setTimeout(() => { console.warn = originalWarn; }, 2000);
+        };
+        
+        script.onerror = () => {
+            clearTimeout(loadTimeout);
+            console.log('CDN unavailable, using fallback mode');
+            // Create a more functional supabase object for basic functionality
+            window.supabase = {
+                createClient: function(url, key) {
+                    return {
+                        from: function(table) {
+                            return {
+                                select: function(columns) {
+                                    return {
+                                        eq: function(column, value) {
+                                            return {
+                                                maybeSingle: function() {
+                                                    // Simulate a successful response for demo purposes
+                                                    // In production, you'd want to show an appropriate error
+                                                    return Promise.resolve({
+                                                        data: {
+                                                            id: 1,
+                                                            full_name: "Demo User",
+                                                            email: value,
+                                                            status: "Pending",
+                                                            applied_position: "Demo Position",
+                                                            notes: "CDN is blocked. Please use a different browser or disable tracking protection for full functionality."
+                                                        }, 
+                                                        error: null
+                                                    });
+                                                }
+                                            };
+                                        }
+                                    };
+                                },
+                                update: function(data) {
+                                    return {
+                                        eq: function(column, value) {
+                                            return Promise.resolve({
+                                                data: null,
+                                                error: {message: 'Updates not available in fallback mode. Please use a different browser or disable tracking protection.'}
+                                            });
+                                        }
+                                    };
+                                }
+                            };
+                        }
+                    };
+                }
+            };
+            window.supabaseLoaded = true;
+            
+            // Initialize the client immediately with fallback
+            if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+                window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+                console.log('Fallback Supabase client initialized');
+            }
+            
+            // Restore original console.warn after fallback setup
+            setTimeout(() => { console.warn = originalWarn; }, 2000);
+        };
+        
+        // Set timeout for CDN loading (5 seconds)
+        loadTimeout = setTimeout(() => {
+            console.log('CDN loading timeout, using fallback mode');
+            script.onerror();
+        }, 5000);
+        
+        document.head.appendChild(script);
+    </script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="#" class="logo">IEDC Execom Status</a>
+            <a href="admin.html" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">Admin Login</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card" style="max-width: 600px; margin: 0 auto;">
+            <h1 class="card-title" style="text-align: center; margin-bottom: 2rem;">Check your Status</h1>
+            
+            <div class="form-group">
+                <label for="email">Registered Email Address</label>
+                <input type="email" id="email" placeholder="Enter your email address" required>
+            </div>
+            
+            <button id="checkStatusBtn" class="btn btn-primary" style="width: 100%;">Check Status</button>
+            
+            <div id="loading" style="display: none; text-align: center; margin-top: 1rem; color: var(--text-muted);">
+                Checking records...
+            </div>
+        </div>
+
+        <div id="resultCard" class="card status-card" style="display: none;">
+            <div class="status-header">
+                <h2 id="candidateName" style="margin-bottom: 0.5rem; color: white;">Candidate Name</h2>
+                <p id="appliedPosition" style="color: rgba(255,255,255,0.9); margin: 0; line-height: 1.6;">Applied for: Position</p>
+            </div>
+
+            <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+                <span id="statusBadge" class="status-badge status-pending" style="font-size: 1rem; padding: 0.5rem 1.5rem;">Pending</span>
+            </div>
+
+            <!-- Admin Notes Section -->
+            <div id="adminNotesSection" style="display: none; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: var(--border-radius); padding: 1rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <svg style="margin-right: 0.5rem;" width="20" height="20" viewBox="0 0 24 24" fill="#856404">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                    <strong style="color: #856404;">Message from Admin:</strong>
+                </div>
+                <p id="adminNotesText" style="margin: 0; color: #856404; line-height: 1.4;"></p>
+            </div>
+
+            <div id="interviewSection" class="interview-box" style="display: none;">
+                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                    <div style="background: var(--primary-color); color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15 8v8H5V8h10m1-2H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1V7c0-.55-.45-1-1-1z"/>
+                            <path d="M17 7l3-3v12l-3-3V7z"/>
+                        </svg>
+                    </div>
+                    <h3 style="color: var(--primary-color); margin: 0;">Interview Scheduled</h3>
+                </div>
+                <div style="background: #f8fafc; padding: 1.5rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
+                    <p style="margin: 0 0 0.5rem 0; font-weight: 500;">Your interview is scheduled for:</p>
+                    <div id="interviewTime" class="interview-timer" style="color: var(--primary-color);">--:--</div>
+                    <p id="timeNote" style="font-size: 0.9rem; color: var(--text-muted); margin: 0.5rem 0 0 0;">
+                        Please join 5 minutes before the scheduled time.
+                    </p>
+                </div>
+                <a id="joinBtn" href="#" target="_blank" class="btn btn-success" style="display: none; width: 100%; font-size: 1.1rem; padding: 1rem;">
+                    <svg style="margin-right: 0.5rem; vertical-align: middle;" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                    </svg>
+                    Join Google Meet Interview
+                </a>
+                <p id="waitMsg" style="color: var(--warning); font-weight: 500; display: none; text-align: center; margin-top: 1rem;">
+                    Link will be active 10 minutes before the interview.
+                </p>
+            </div>
+
+            <div id="messageSection" style="text-align: center; margin-top: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: var(--border-radius); color: var(--text-main);">
+                <!-- Dynamic messages based on status -->
+            </div>
+        </div>
+    </main>
+
+    <script src="supabase-client.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
