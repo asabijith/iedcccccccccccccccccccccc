@@ -4,7 +4,7 @@
 window.SUPABASE_URL = window.SUPABASE_URL || 'https://qkrgogzlqynebqzijtew.supabase.co';
 window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrcmdvZ3pscXluZWJxemlqdGV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDU1NzUsImV4cCI6MjA4MDc4MTU3NX0.klmTg6bYtLFHxh3XGnpwUVBDEVtvaDWuv3ypV1zwcK8';
 
-if (window.SUPABASE_URL === 'https://qkrgogzlqynebqzijtew.supabase.co' || window.SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrcmdvZ3pscXluZWJxemlqdGV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDU1NzUsImV4cCI6MjA4MDc4MTU3NX0.klmTg6bYtLFHxh3XGnpwUVBDEVtvaDWuv3ypV1zwcK8') {
+if (window.SUPABASE_URL === 'YOUR_SUPABASE_URL' || window.SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
     console.error('Please update assets/js/supabase-client.js with your Supabase credentials.');
     alert('System Error: Supabase credentials not configured.');
 }
