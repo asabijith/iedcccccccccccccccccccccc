@@ -49,86 +49,8 @@
         
         script.onerror = () => {
             clearTimeout(loadTimeout);
-            console.log('CDN unavailable, using fallback mode');
-            // Create a more functional supabase object for basic functionality
-            window.supabase = {
-                createClient: function(url, key) {
-                    return {
-                        from: function(table) {
-                            return {
-                                select: function(columns) {
-                                    return {
-                                        eq: function(column, value) {
-                                            return {
-                                                single: function() {
-                                                    // Return demo data for admin panel
-                                                    return Promise.resolve({
-                                                        data: {
-                                                            id: 1,
-                                                            full_name: "Demo User",
-                                                            email: "demo@example.com",
-                                                            status: "Pending",
-                                                            applied_position: "Demo Position",
-                                                            notes: "CDN is blocked. Using fallback mode."
-                                                        }, 
-                                                        error: null
-                                                    });
-                                                },
-                                                order: function() {
-                                                    return Promise.resolve({
-                                                        data: [{
-                                                            id: 1,
-                                                            full_name: "Demo User",
-                                                            email: "demo@example.com",
-                                                            status: "Pending",
-                                                            applied_position: "Demo Position",
-                                                            notes: "CDN is blocked. Using fallback mode."
-                                                        }], 
-                                                        error: null
-                                                    });
-                                                }
-                                            };
-                                        },
-                                        order: function() {
-                                            return Promise.resolve({
-                                                data: [{
-                                                    id: 1,
-                                                    full_name: "Demo User",
-                                                    email: "demo@example.com",
-                                                    status: "Pending",
-                                                    applied_position: "Demo Position",
-                                                    notes: "CDN is blocked. Using fallback mode."
-                                                }], 
-                                                error: null
-                                            });
-                                        }
-                                    };
-                                },
-                                update: function(data) {
-                                    return {
-                                        eq: function(column, value) {
-                                            return Promise.resolve({
-                                                data: null,
-                                                error: {message: 'Updates not available in fallback mode. Please use a different browser or disable tracking protection.'}
-                                            });
-                                        }
-                                    };
-                                }
-                            };
-                        }
-                    };
-                }
-            };
-            window.supabaseLoaded = true;
-            
-            // Initialize the client immediately with fallback
-            if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
-                window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-                console.log('Fallback Supabase client initialized');
-            }
-            
-            // Restore original console.warn after fallback setup
-            setTimeout(() => { console.warn = originalWarn; }, 2000);
+            console.log('CDN unavailable, using REST fallback');
+            window.supabaseCdnFailed = true; // let supabase-client.js pick the REST path
         };
         
         // Set timeout for CDN loading (5 seconds)
